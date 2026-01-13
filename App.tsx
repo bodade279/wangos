@@ -1,45 +1,55 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect, useRef } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AppNavigator from './src/navigation/AppNavigator';
+import Toast from 'react-native-toast-message';
+import NetInfo from "@react-native-community/netinfo";
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+const App = () => {
+  const isFirstRender = useRef(true);
+  const wasConnected = useRef<boolean | null>(null);
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      const isConnected = state.isConnected;
+
+     
+      if (wasConnected.current === null) {
+        wasConnected.current = isConnected;
+        return;
+      }
+
+      if (wasConnected.current === true && isConnected === false) {
+        Toast.show({
+          type: 'error',
+          text1: 'Network Disconnected',
+          text2: 'Please check your internet connection',
+          position: 'bottom',
+          visibilityTime: 4000,
+        });
+      } else if (wasConnected.current === false && isConnected === true) {
+        Toast.show({
+          type: 'success',
+          text1: 'Connected',
+          text2: 'Back online',
+          position: 'bottom',
+          visibilityTime: 3000,
+        });
+      }
+
+      wasConnected.current = isConnected;
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <AppNavigator />
+      <Toast />
     </SafeAreaProvider>
   );
-}
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
+};
 
 export default App;
